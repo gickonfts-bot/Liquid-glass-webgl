@@ -1,21 +1,12 @@
-import * as THREE from 'three';
-// Note: In a true GitHub project, you'd import THREE, but here 
-// we assume the CDN import in index.html makes THREE globally available.
+// ... (omitting shared setup functions and declarations)
+import * as THREE from 'three'; 
 
-// 1. Scene Variables
 let scene, camera, renderer, geometry, material, mesh;
 const container = document.getElementById('webgl-container');
+const buttonWrapper = document.getElementById('liquid-button-wrapper'); // NEW: Get the wrapper
 let uniforms;
 
-// 2. Load Shaders (These paths point to the files we will create next)
-const vertexShader = `
-    // Vertex Shader code will be loaded here from 'shaders/vertex.glsl'
-`;
-const fragmentShader = `
-    // Fragment Shader code will be loaded here from 'shaders/fragment.glsl'
-`;
-
-// Helper function to fetch the shader file content
+// Helper function to fetch the shader file content (assuming it's still in main.js)
 async function loadShader(path) {
     const response = await fetch(path);
     return response.text();
@@ -26,84 +17,75 @@ async function init() {
     // --- Setup Scene ---
     scene = new THREE.Scene();
 
-    // --- Setup Camera ---
-    // Orthographic Camera is often easier for 2D screen-filling effects
+    // --- Setup Camera (Orthographic) ---
+    // We adjust the camera to match the button's aspect ratio (200x60 = 3.33:1)
+    const aspect = buttonWrapper.offsetWidth / buttonWrapper.offsetHeight; 
+    
     camera = new THREE.OrthographicCamera(
-        -1, // Left
-        1,  // Right
-        1,  // Top
-        -1, // Bottom
-        0.1, // Near
-        1000 // Far
+        -aspect, // Left
+        aspect,  // Right
+        1,       // Top
+        -1,      // Bottom
+        0.1,     // Near
+        1000     // Far
     );
     camera.position.z = 1;
 
     // --- Setup Renderer ---
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    // NEW: Set size to match the button wrapper size
+    renderer.setSize(buttonWrapper.offsetWidth, buttonWrapper.offsetHeight); 
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // --- Load Shaders from files ---
+    // --- Load Shaders (as before) ---
     const vsSource = await loadShader('./shaders/vertex.glsl');
     const fsSource = await loadShader('./shaders/fragment.glsl');
     
-    // --- Define Uniforms ---
-    // Uniforms are variables passed from JavaScript to the shaders.
+    // --- Define Uniforms (as before) ---
     uniforms = {
-        u_time: { type: 'f', value: 0.0 }, // Time for animation
-        u_resolution: { type: 'v2', value: new THREE.Vector2() }, // Screen size
-        u_mouse: { type: 'v2', value: new THREE.Vector2(0.5, 0.5) } // Mouse position
+        u_time: { type: 'f', value: 0.0 }, 
+        // NEW: Initial resolution is the button's size
+        u_resolution: { type: 'v2', value: new THREE.Vector2(buttonWrapper.offsetWidth, buttonWrapper.offsetHeight) }, 
+        u_mouse: { type: 'v2', value: new THREE.Vector2(0.5, 0.5) }
     };
     
-    // --- Create Material using Custom Shaders ---
+    // --- Create Material and Mesh (as before) ---
     material = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: vsSource,
         fragmentShader: fsSource,
+        transparent: true // Ensure the alpha channel works for the rounded button edges
     });
     
-    // --- Create Geometry (A simple plane that covers the screen) ---
-    geometry = new THREE.PlaneGeometry(2, 2); 
+    geometry = new THREE.PlaneGeometry(2 * aspect, 2); // Adjust plane to camera aspect
     mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
     // --- Event Listeners ---
-    window.addEventListener('resize', onWindowResize);
-    document.addEventListener('mousemove', onMouseMove, false);
-
-    // Initial size update
-    onWindowResize(); 
+    // NEW: Listen for mouse events on the button wrapper only
+    buttonWrapper.addEventListener('mousemove', onMouseMove, false); 
+    // We don't need a window resize listener if the button is fixed size.
 
     // Start the render loop
     animate();
 }
 
-// 4. Handle Window Resize
-function onWindowResize() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    uniforms.u_resolution.value.x = window.innerWidth;
-    uniforms.u_resolution.value.y = window.innerHeight;
-}
-
-// 5. Handle Mouse Movement (Crucial for interactive liquid distortion)
+// 4. Handle Mouse Movement (Crucial for interactive liquid distortion)
 function onMouseMove(event) {
-    // Normalize mouse position to (0 to 1)
-    uniforms.u_mouse.value.x = event.clientX / window.innerWidth;
-    uniforms.u_mouse.value.y = 1.0 - (event.clientY / window.innerHeight); // Flip Y-axis for WebGL
+    // NEW: Normalize mouse position relative to the button's bounding box
+    const rect = buttonWrapper.getBoundingClientRect();
+    uniforms.u_mouse.value.x = (event.clientX - rect.left) / rect.width;
+    uniforms.u_mouse.value.y = 1.0 - ((event.clientY - rect.top) / rect.height); // Flip Y-axis for WebGL
 }
 
-// 6. The Animation Loop
+// 5. The Animation Loop (Same as before)
 const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
-
-    // Update time uniform for continuous animation in the shader
     uniforms.u_time.value = clock.getElapsedTime();
-
     renderer.render(scene, camera);
 }
 
 // Start the application
 init();
-
