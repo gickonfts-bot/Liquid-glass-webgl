@@ -1,1 +1,62 @@
+/* Reset basic styles */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrollbars when canvas fills the screen */
+    width: 100vw;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: white;
+}
 
+/* Container for the WebGL canvas */
+#webgl-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Background Gradient: 
+   A complex, colorful background is essential. The glass effect 
+   works by distorting this background, creating the refraction illusion.
+*/
+#webgl-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Place behind the canvas */
+    
+    /* Example: A smooth, vibrant gradient similar to Apple's wallpapers */
+    background: linear-gradient(135deg, 
+        #007bff 0%,    /* Blue */
+        #6f42c1 25%,   /* Purple */
+        #dc3545 50%,   /* Red */
+        #ffc107 75%,   /* Yellow */
+        #28a745 100%   /* Green */
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+/* Animation to subtly move the background gradient */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Style for the WebGL Canvas itself (inserted by Three.js) 
+   It should cover the container entirely.
+*/
+canvas {
+    display: block;
+}
